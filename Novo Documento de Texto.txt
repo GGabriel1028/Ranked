@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>RANKED — Top 10 Diário</title>
+<style>
+:root{--accent:#0abf7a;--muted:#888;}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;transition:background .35s,color .35s}
+body.light{background:linear-gradient(120deg,#f7f9fc,#e6eef6);color:#102030}
+body.dark{background:linear-gradient(120deg,#0d1b2a,#1b263b);color:#f5f8fb}
+
+/* ===== HERO / VIDEO BANNER ===== */
+#hero{
+  width:100%;
+  max-width:1200px;
+  margin-top:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+  border-radius:12px;
+  box-shadow:0 18px 60px rgba(2,12,34,0.18);
+}
+body.light #hero{ background: #ffffff; }
+body.dark  #hero{ background: #000000; }
+
+#heroVideo{
+  width:100%;
+  height:420px;
+  object-fit:cover;
+  display:block;
+  filter:brightness(.92);
+  border-radius:12px;
+}
+@media(max-width:980px){ #heroVideo{height:320px} }
+
+#heroOverlay{
+  position:absolute;
+  left:0;right:0;top:0;bottom:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  text-align:center;
+  padding:20px;
+}
+#heroTitle{
+  font-size:34px;
+  color:#ffffff;
+  font-weight:800;
+  text-shadow:none;
+  letter-spacing:0.4px;
+  pointer-events:auto;
+}
+#heroSubtitle{
+  font-size:20px;
+  color:#ffffff;
+  margin-top:8px;
+  font-weight:500;
+  opacity:0.95;
+}
+
+/* ===== APP LAYOUT (mantida toda a lógica) ===== */
+header{width:100%;max-width:980px;padding:12px 16px}
+.topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:8px}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,#ff8aa2,#ff6b81);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
+h1{margin:0;font-size:20px}
+main{width:100%;max-width:980px;display:grid;grid-template-columns:1fr 340px;gap:14px;padding:16px}
+@media(max-width:980px){main{grid-template-columns:1fr}}
+.card{background:rgba(255,255,255,0.03);padding:14px;border-radius:12px;backdrop-filter:blur(6px);box-shadow:0 8px 30px rgba(2,12,34,.18);transition:all .3s}
+body.dark .card{background:rgba(0,0,0,0.04)}
+.ranking{display:flex;flex-direction:column;gap:10px}
+.item{display:flex;gap:12px;align-items:center;padding:8px;border-radius:10px;background:rgba(0,0,0,0.02)}
+.thumb{width:50px;height:50px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.info{flex:1;min-width:0}
+.name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:13px;color:var(--muted);margin-top:6px}
+.actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+button{cursor:pointer;border:0;padding:8px 10px;border-radius:8px;transition:background .25s;color:inherit}
+.vote{background:var(--accent);color:#04221a;font-weight:800}
+aside{display:flex;flex-direction:column;gap:12px}
+.input{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);background:transparent;color:inherit}
+.other-themes{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.other-themes div{cursor:pointer;color:var(--accent);font-weight:700}
+.alert{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--accent);color:#04221a;padding:10px 16px;border-radius:10px;font-weight:700;opacity:0;transition:opacity .35s}
+footer{width:100%;max-width:980px;padding:12px 16px;color:var(--muted);font-size:13px;text-align:center;margin-top:14px}
+
+/* ===== Admin modal & suggestions panel ===== */
+#adminModal{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:9999;
+}
+#adminBox{
+  width:92%;max-width:900px;background:#fff;border-radius:12px;padding:18px;box-shadow:0 18px 50px rgba(2,12,34,0.4);
+}
+body.dark #adminBox{background:#06121a;color:#f0f0f0}
+#adminHeader{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+#suggestionsList{max-height:60vh;overflow:auto;padding-top:8px}
+.suggestion-row{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid rgba(0,0,0,0.06)}
+.suggestion-key{font-weight:700}
+.suggestion-count{color:var(--muted)}
+#adminPanelBtn{padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.06);cursor:pointer}
+
+/* Hall styling */
+.hall-card{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:8px;background:rgba(0,0,0,0.03)}
+.hall-row{display:flex;justify-content:space-between;align-items:center;padding:6px 8px}
+
+/* responsive tweak */
+@media(max-width:600px){
+  #adminBox{width:96%;}
+  .thumb{display:none}
+}
+</style>
+</head>
+<body class="light">
+
+<header>
+  <!-- HERO VIDEO BANNER (realistic Earth from NASA SVS - public domain) -->
+  <div id="hero" role="banner" aria-label="Planeta Terra girando">
+    <video id="heroVideo" autoplay muted loop playsinline preload="auto">
+      <source src="https://svs.gsfc.nasa.gov/vis/a000000/a002700/a002708/a002708.mp4" type="video/mp4">
+      <!-- fallback -->
+    </video>
+
+    <div id="heroOverlay" aria-hidden="false">
+      <div id="heroTitle">Bem-vindo à Ranked</div>
+      <div id="heroSubtitle">Vote, comente e descubra o top do dia.</div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;max-width:980px;width:100%;padding:0 16px;">
+    <div class="brand">
+      <div class="logo">RΔ</div>
+      <div><h1 id="title">RANKED</h1></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button id="toggleTheme" style="padding:8px 12px;border-radius:8px;background:var(--accent);color:#04221a;font-weight:700;cursor:pointer;">Modo Escuro</button>
+    </div>
+  </div>
+</header>
+
+<!-- NEW: suggestion input below planet but above "TEMA DO DIA" -->
+<div style="margin-top:18px;max-width:980px;width:100%;padding:0 16px;">
+  <div class="card" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+    <div style="width:100%;text-align:left;font-weight:700">Escreva aqui uma ideia de tema:</div>
+    <input id="newThemeInput" class="input" maxlength="80" placeholder="Digite sua sugestão de tema..." style="max-width:760px;width:100%;">
+    <div style="width:100%;display:flex;gap:8px;justify-content:flex-end;">
+      <button id="saveSuggestionBtn">Enviar sugestão</button>
+    </div>
+  </div>
+</div>
+
+<!-- TÍTULO ANTES DA LISTA -->
+<div style="margin-top:12px;max-width:980px;width:100%;padding:0 16px;">
+  <div style="text-align:center;font-weight:900;font-size:18px;margin:8px 0;">TEMA DO DIA</div>
+  <div id="themeTitle" style="text-align:center;font-size:18px;font-weight:700;margin-bottom:8px;"></div>
+</div>
+
+<main>
+  <section class="card" style="position:relative;">
+    <div id="ranking" class="ranking" style="margin-top:12px"></div>
+
+    <div class="card" style="margin-top:12px">
+      <input id="commentInput" class="input" maxlength="40" placeholder="Digite aqui uma opção para a lista"/>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button id="sendBtn" class="vote">Enviar</button>
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <strong>Hall da Fama (TOP 3)</strong>
+      <div id="hall" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <strong>Outros Temas</strong>
+      <div class="other-themes" id="otherThemes"></div>
+    </div>
+  </aside>
+</main>
+
+<div id="alert" class="alert">✅ Voto adicionado!</div>
+
+<footer>
+  Dados salvos no navegador • editar itens/imagens no topo do código
+  <div style="margin-top:8px;">
+    <!-- Admin panel button remains in footer and centered -->
+    <button id="adminPanelBtn" style="padding:8px 12px;border-radius:8px;background:rgba(0,0,0,0.06);cursor:pointer;">Painel Admin</button>
+  </div>
+</footer>
+
+<!-- Admin modal (hidden) -->
+<div id="adminModal" aria-hidden="true" style="display:none;">
+  <div id="adminBox" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+    <div id="adminHeader">
+      <div>
+        <div id="adminTitle" style="font-weight:800;font-size:18px">💡 Sugestões de Temas (Admin)</div>
+        <div style="font-size:12px;color:var(--muted)">Aba privada — digite a senha para acessar</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <!-- password field is now type="password" so input is hidden -->
+        <input id="adminPass" type="password" placeholder="Senha" style="padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.08)">
+        <button id="adminOpenBtn">Abrir</button>
+        <button id="adminCloseBtn" style="background:#eee;color:#000">Fechar</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;">
+      <div style="flex:1;">
+        <div style="font-weight:700;margin-bottom:8px">Sugestões agrupadas (por similaridade) — ordenadas por quantidade</div>
+        <div id="suggestionsList" style="border:1px solid rgba(0,0,0,0.06);border-radius:8px;padding:8px;min-height:120px;max-height:60vh;overflow:auto"></div>
+      </div>
+      <div style="width:260px;">
+        <div style="font-weight:700;margin-bottom:8px">Ações</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button id="exportSuggestions">Exportar JSON</button>
+          <button id="clearSuggestions" style="background:#ff6b6b;color:#fff">Limpar sugestões</button>
+          <div style="font-size:12px;color:var(--muted)">Sugestões são armazenadas localmente no navegador.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================
+   UTIL: SVG data URIs / escape
+   ============================ */
+function svgDataUri(text, emoji, bgColor='#ffffff', fgColor='#222222', w=200, h=200){
+  let short = String(text);
+  if(short.length>28) short = short.slice(0,25)+'...';
+  const svg = `
+  <svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>
+    <rect width='100%' height='100%' fill='${bgColor}' rx='14' ry='14'/>
+    <text x='14' y='44' font-family='Inter, Arial, sans-serif' font-size='26' fill='${fgColor}'>${emoji}</text>
+    <text x='70' y='54' font-family='Inter, Arial, sans-serif' font-size='16' fill='${fgColor}'>${escapeXml(short)}</text>
+    <text x='14' y='180' font-family='Inter, Arial, sans-serif' font-size='11' fill='${fgColor}' opacity='0.6'>${escapeXml(text)}</text>
+  </svg>
+  `;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+function escapeXml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ============================
+   THEMES & INITIAL ITEMS
+   ============================ */
+const THEMES_LIST = {
+  "Top 10 séries que todo mundo deveria assistir":[
+    "Breaking Bad","Game of Thrones","Stranger Things","Friends","The Crown",
+    "Dark","House of Cards","Vikings","The Witcher","The Mandalorian"
+  ],
+  "Top 10 comidas brasileiras mais queridas":[
+    "Feijoada","Pão de Queijo","Brigadeiro","Coxinha","Moqueca",
+    "Acarajé","Churrasco","Tapioca","Farofa","Vatapá"
+  ],
+  "Top 10 jogos clássicos da infância":[
+    "Super Mario Bros","Sonic","Street Fighter","Tetris","Pac-Man",
+    "Legend of Zelda","Donkey Kong","Mega Man","Pokémon Red/Blue","Final Fantasy"
+  ],
+  "Top 10 frases que mais inspiram":[
+    "Seja a mudança que você deseja ver no mundo.",
+    "O sucesso é a soma de pequenos esforços repetidos diariamente.",
+    "Acredite em si mesmo e todo o resto virá.",
+    "Não espere por oportunidades, crie-as.",
+    "O impossível é apenas opinião.",
+    "O sucesso vem para quem persiste.",
+    "A vida é 10% o que acontece e 90% como reagimos.",
+    "Se você pode sonhar, você pode fazer.",
+    "A disciplina é a ponte entre objetivos e realizações.",
+    "Nunca é tarde para recomeçar."
+  ],
+  "Top 10 músicas que definem o amor":[
+    "I Will Always Love You - Whitney Houston","My Heart Will Go On - Celine Dion",
+    "Shape of You - Ed Sheeran","Perfect - Ed Sheeran","All of Me - John Legend",
+    "Thinking Out Loud - Ed Sheeran","Endless Love - Diana Ross & Lionel Richie",
+    "I Don’t Want to Miss a Thing - Aerosmith","Something - The Beatles",
+    "Unchained Melody - The Righteous Brothers"
+  ],
+  "Top 10 invenções que mudaram o mundo":[
+    "Internet","Telefone","Luz Elétrica","Automóvel","Avião",
+    "Computador","Imprensa","Bicicleta","Vacina","Telégrafo"
+  ],
+  "Top 10 filmes de super-heróis mais épicos":[
+    "Os Vingadores","Homem de Ferro","Batman Begins","Mulher Maravilha","Pantera Negra",
+    "Liga da Justiça","Deadpool","Thor: Ragnarok","Capitão América: Guerra Civil","Homem-Aranha: De Volta ao Lar"
+  ],
+  "Top 10 lugares dos sonhos para viajar":[
+    "Paris","Maldivas","Nova Zelândia","Japão","Noruega",
+    "Itália","Ilhas Gregas","Canadá","África do Sul","Tailândia"
+  ],
+  "Top 10 aplicativos que facilitam a vida":[
+    "WhatsApp","Instagram","Google Maps","Spotify","Uber",
+    "Gmail","TikTok","Zoom","YouTube","Duolingo"
+  ],
+  "Top 10 memes eternos da internet":[
+    "Distracted Boyfriend","Drake Hotline Bling","Success Kid","Woman Yelling at Cat",
+    "Two Buttons","Mocking SpongeBob","Expanding Brain","Is This a Pigeon?","Change My Mind","Leonardo DiCaprio Cheers"
+  ],
+  "Top 10 jogos multiplayers mais divertidos":[
+    "Minecraft","Overcooked","Terraria","Lego Batman","Rayman",
+    "Rocket League","Among Us","Gartic","PUBG","LOL"
+  ]
+};
+
+const THEME_ICON = {
+  "Top 10 séries que todo mundo deveria assistir":"🎬",
+  "Top 10 comidas brasileiras mais queridas":"🍽️",
+  "Top 10 jogos clássicos da infância":"🎮",
+  "Top 10 frases que mais inspiram":"💬",
+  "Top 10 músicas que definem o amor":"🎵",
+  "Top 10 invenções que mudaram o mundo":"💡",
+  "Top 10 filmes de super-heróis mais épicos":"🦸",
+  "Top 10 lugares dos sonhos para viajar":"🌍",
+  "Top 10 aplicativos que facilitam a vida":"📱",
+  "Top 10 memes eternos da internet":"😂",
+  "Top 10 jogos multiplayers mais divertidos":"🕹️"
+};
+
+/* ============================
+   STATE & DOM REFS
+   ============================ */
+const LS_KEY = 'ranked_v2_state_full';
+const SUG_KEY = 'ranked_v2_suggestions_full';
+const ADMIN_PASSWORD = 'Admin1028';
+
+let allItems = {};
+let suggestions = [];
+let currentTheme = null;
+
+const rankingEl = document.getElementById('ranking');
+const hallEl = document.getElementById('hall');
+const otherThemesEl = document.getElementById('otherThemes');
+const commentInput = document.getElementById('commentInput');
+const sendBtn = document.getElementById('sendBtn');
+const alertBox = document.getElementById('alert');
+const toggleBtn = document.getElementById('toggleTheme');
+const newThemeInput = document.getElementById('newThemeInput');
+const saveSuggestionBtn = document.getElementById('saveSuggestionBtn');
+
+const adminModal = document.getElementById('adminModal');
+const adminPass = document.getElementById('adminPass');
+const adminOpenBtn = document.getElementById('adminOpenBtn');
+const adminCloseBtn = document.getElementById('adminCloseBtn');
+const suggestionsListEl = document.getElementById('suggestionsList');
+const exportBtn = document.getElementById('exportSuggestions');
+const clearSugBtn = document.getElementById('clearSuggestions');
+const adminPanelBtn = document.getElementById('adminPanelBtn');
+
+/* save/load state */
+function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(allItems)); }catch(e){console.warn(e)} }
+function loadState(){
+  try{
+    const s = localStorage.getItem(LS_KEY);
+    if(s){ allItems = JSON.parse(s); return; }
+  }catch(e){ console.warn(e); }
+  // initialize
+  for(const t of Object.keys(THEMES_LIST)){
+    allItems[t] = THEMES_LIST[t].map(name => ({ name, votes: 0 }));
+  }
+}
+function saveSuggestions(){ try{ localStorage.setItem(SUG_KEY, JSON.stringify(suggestions)); }catch(e){console.warn(e)} }
+function loadSuggestions(){ try{ const s = localStorage.getItem(SUG_KEY); if(s) suggestions = JSON.parse(s); }catch(e){ suggestions = [] } }
+
+/* toggle light/dark - fixed to toggle body classes and button text */
+toggleBtn.addEventListener('click', ()=>{
+  if(document.body.classList.contains('light')){
+    document.body.classList.remove('light'); document.body.classList.add('dark');
+    toggleBtn.textContent = 'Modo Claro';
+  } else {
+    document.body.classList.remove('dark'); document.body.classList.add('light');
+    toggleBtn.textContent = 'Modo Escuro';
+  }
+});
+
+/* alert util */
+function showAlert(msg){
+  alertBox.textContent = msg;
+  alertBox.style.opacity = '1';
+  setTimeout(()=> alertBox.style.opacity = '0', 1500);
+}
+
+/* pick theme by day */
+function pickThemeOfDay(){
+  const keys = Object.keys(THEMES_LIST);
+  const day = Math.floor(Date.now() / (1000*60*60*24));
+  const idx = day % keys.length;
+  return keys[idx];
+}
+
+/* thumb generator: svg dataURI tied to name */
+function thumbFor(itemName, themeKey){
+  const emoji = THEME_ICON[themeKey] || '📌';
+  const colors = ['#ffffff','#fff7e6','#f0fff4','#eef2ff','#fff0f6','#f7fff7','#fff8f0'];
+  const hash = [...itemName].reduce((s,c)=>s + c.charCodeAt(0), 0);
+  const bg = colors[ hash % colors.length ];
+  const fg = '#222222';
+  return svgDataUri(itemName, emoji, bg, fg, 200, 200);
+}
+
+/* compute Hall da Fama (top 3) based on votes + related suggestions count */
+function computeHallTop3(){
+  // We consider: votesSum = sum of votes for all items in theme
+  // commentsCount = number of suggestions that loosely match theme (presence of words)
+  function normalize(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,'').trim(); }
+  const themeStats = Object.keys(allItems).map(theme=>{
+    const items = allItems[theme] || [];
+    const votesSum = items.reduce((s,i)=>s + (i.votes||0), 0);
+    const themeNorm = normalize(theme);
+    const themeWords = themeNorm.split(/\s+/).filter(Boolean);
+    // count suggestions that contain at least one meaningful word from theme (min length 3)
+    let commentsCount = 0;
+    for(const s of suggestions){
+      const txt = normalize(s.text || '');
+      if(!txt) continue;
+      for(const w of themeWords){
+        if(w.length < 3) continue;
+        if(txt.includes(w)){ commentsCount++; break; }
+      }
+    }
+    return { theme, votesSum, commentsCount, score: votesSum + commentsCount };
+  });
+  themeStats.sort((a,b)=>b.score - a.score);
+  return themeStats.slice(0,3);
+}
+
+/* render */
+function renderTheme(themeKey){
+  if(themeKey) currentTheme = themeKey;
+  if(!currentTheme) currentTheme = pickThemeOfDay();
+  const items = allItems[currentTheme] || [];
+  document.getElementById('title').textContent = 'RANKED';
+  document.getElementById('themeTitle').textContent = currentTheme;
+
+  // ranking (top 10)
+  rankingEl.innerHTML = '';
+  items.sort((a,b)=>b.votes - a.votes);
+  const top10 = items.slice(0,10);
+  top10.forEach((it, idx) => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    const thumb = thumbFor(it.name, currentTheme);
+    div.innerHTML = `
+      <div class="thumb"><img src="${thumb}" alt="${escapeHtml(it.name)}"></div>
+      <div class="info">
+        <div class="name">${idx+1}. ${escapeHtml(it.name)}</div>
+        <div class="meta">${it.votes} votos</div>
+      </div>
+      <div class="actions"><button class="vote">Votar</button></div>
+    `;
+    const btn = div.querySelector('.vote');
+    btn.addEventListener('click', ()=>{
+      it.votes++;
+      saveState();
+      showAlert(`✅ Voto em "${it.name}" contabilizado`);
+      renderTheme();
+      renderHall(); // update hall on vote
+    });
+    rankingEl.appendChild(div);
+  });
+
+  // Hall da Fama (top 3) - rendered by separate function
+  renderHall();
+
+  // Outros temas list
+  otherThemesEl.innerHTML = '';
+  Object.keys(allItems).forEach(k=>{
+    if(k === currentTheme) return;
+    const d = document.createElement('div');
+    d.textContent = k;
+    d.addEventListener('click', ()=>{ currentTheme = k; renderTheme(); });
+    otherThemesEl.appendChild(d);
+  });
+}
+
+/* render Hall da Fama */
+function renderHall(){
+  const top3 = computeHallTop3();
+  hallEl.innerHTML = '';
+  if(top3.length === 0){
+    hallEl.textContent = 'Sem dados suficientes.';
+    return;
+  }
+  // build display with medals
+  const medals = ['🥇','🥈','🥉'];
+  const container = document.createElement('div');
+  container.className = 'hall-card';
+  top3.forEach((t, i)=>{
+    const row = document.createElement('div');
+    row.className = 'hall-row';
+    row.innerHTML = `<div style="display:flex;gap:10px;align-items:center"><div style="font-size:20px">${medals[i]}</div><div style="font-weight:700">${escapeHtml(t.theme)}</div></div><div style="text-align:right"><div style="font-weight:700">${t.votesSum} votos</div><div style="font-size:12px;color:var(--muted)">${t.commentsCount} comentários</div></div>`;
+    container.appendChild(row);
+  });
+  hallEl.appendChild(container);
+}
+
+/* comment / quick-vote logic */
+sendBtn.addEventListener('click', ()=>{
+  const raw = commentInput.value.trim();
+  if(!raw) return;
+  if(raw.length > 40){ showAlert('❌ Máx. 40 caracteres'); return; }
+  const items = allItems[currentTheme];
+
+  const lower = raw.toLowerCase();
+  // exact match
+  let exact = items.find(i => i.name.toLowerCase() === lower);
+  if(exact){
+    exact.votes++;
+    showAlert(`✅ Voto em "${exact.name}" adicionado`);
+    commentInput.value = '';
+    saveState();
+    renderTheme();
+    return;
+  }
+
+  // similarity (Levenshtein)
+  let minD = Infinity, closest = null;
+  items.forEach(i=>{
+    const d = levenshtein(i.name.toLowerCase(), lower);
+    if(d < minD){ minD = d; closest = i; }
+  });
+
+  if(minD <= 2 && closest){
+    closest.votes++;
+    showAlert(`✅ Corrigido para "${closest.name}" e voto adicionado`);
+    commentInput.value = '';
+    saveState();
+    renderTheme();
+    return;
+  }
+
+  // no match: substitute least voted
+  let minItem = items.reduce((p,c)=> p.votes <= c.votes ? p : c );
+  const existsAnywhere = items.find(i => i.name.toLowerCase() === lower);
+  if(existsAnywhere){
+    existsAnywhere.votes++;
+    showAlert(`✅ Voto em "${existsAnywhere.name}" adicionado`);
+  } else {
+    minItem.name = raw;
+    minItem.votes = 1;
+    showAlert(`✅ "${raw}" adicionado à lista e recebeu 1 voto`);
+  }
+
+  commentInput.value = '';
+  saveState();
+  renderTheme();
+});
+
+/* Levenshtein */
+function levenshtein(a, b){
+  if(a === b) return 0;
+  const la = a.length, lb = b.length;
+  if(la === 0) return lb;
+  if(lb === 0) return la;
+  const dp = Array(la + 1).fill(null).map(()=>Array(lb + 1).fill(0));
+  for(let i=0;i<=la;i++) dp[i][0] = i;
+  for(let j=0;j<=lb;j++) dp[0][j] = j;
+  for(let i=1;i<=la;i++){
+    for(let j=1;j<=lb;j++){
+      const cost = a[i-1] === b[j-1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost);
+    }
+  }
+  return dp[la][lb];
+}
+
+/* escape html util */
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* SUGGESTIONS: save user suggestions locally */
+saveSuggestionBtn.addEventListener('click', ()=>{
+  const raw = newThemeInput.value.trim();
+  if(!raw) return showAlert('❌ Digite algo antes de enviar');
+  suggestions.push({ text: raw, ts: Date.now() });
+  saveSuggestions();
+  newThemeInput.value = '';
+  showAlert('✅ Sugestão salva!');
+  // update hall as suggestions may affect comments count
+  renderHall();
+});
+
+/* ADMIN (password protected) — modal and hidden password field */
+adminPanelBtn.addEventListener('click', ()=>{
+  adminModal.style.display = 'flex';
+  adminModal.setAttribute('aria-hidden','false');
+  adminPass.value = '';
+  adminPass.focus();
+});
+adminCloseBtn.addEventListener('click', ()=>{ adminModal.style.display = 'none'; adminModal.setAttribute('aria-hidden','true'); adminPass.value=''; });
+adminOpenBtn.addEventListener('click', ()=>{ attemptAdminOpen(); });
+adminPass.addEventListener('keydown', (e)=>{ if(e.key==='Enter') attemptAdminOpen(); });
+
+function attemptAdminOpen(){
+  const val = adminPass.value || '';
+  if(val !== ADMIN_PASSWORD){ alert('Senha incorreta'); return; }
+  // load suggestions and populate groups
+  populateSuggestionsPanel();
+}
+
+/* Grouping algorithm and render (Option A: table-like grouped items with counts) */
+function populateSuggestionsPanel(){
+  loadSuggestions();
+  // Normalize suggestions and group by similarity (Levenshtein)
+  function normalize(s){
+    return s.toLowerCase().replace(/[^\w\sáàâãéêíóôõúç\-]/g,'').replace(/\s+/g,' ').trim();
+  }
+  const rawTexts = suggestions.map(s => s.text.trim()).filter(Boolean);
+  const groups = []; // {norm, reps: [origs], count, repDisplay}
+
+  rawTexts.forEach(txt => {
+    const n = normalize(txt);
+    if(!n) return;
+    // try find best matching group by distance <= 3 (tunable)
+    let best = null, bestD = Infinity;
+    for(const g of groups){
+      const d = levenshtein(g.norm, n);
+      if(d < bestD){ bestD = d; best = g; }
+    }
+    if(best && bestD <= 3){
+      best.count++;
+      best.reps.push(txt);
+      if(txt.length < best.repDisplay.length) best.repDisplay = txt;
+    } else {
+      groups.push({ norm: n, reps: [txt], count: 1, repDisplay: txt });
+    }
+  });
+
+  // sort groups by count desc
+  groups.sort((a,b) => b.count - a.count);
+
+  // render as table-like list
+  suggestionsListEl.innerHTML = '';
+  if(groups.length === 0){
+    suggestionsListEl.innerHTML = '<div style="color:var(--muted)">Sem sugestões ainda.</div>';
+    return;
+  }
+
+  // header
+  const header = document.createElement('div');
+  header.style.display = 'flex';
+  header.style.justifyContent = 'space-between';
+  header.style.padding = '8px';
+  header.style.fontWeight = '700';
+  header.style.borderBottom = '1px solid rgba(0,0,0,0.06)';
+  header.innerHTML = '<div>Ideia (representativa)</div><div>Ocorrências</div>';
+  suggestionsListEl.appendChild(header);
+
+  groups.forEach(g => {
+    const row = document.createElement('div');
+    row.className = 'suggestion-row';
+    row.style.display = 'flex';
+    row.style.justifyContent = 'space-between';
+    row.style.alignItems = 'center';
+    row.style.padding = '8px';
+    const left = document.createElement('div');
+    left.style.maxWidth = '70%';
+    left.style.overflow = 'hidden';
+    left.innerHTML = `<div class="suggestion-key">${escapeHtml(g.repDisplay)}</div><div style="font-size:12px;color:var(--muted)">${escapeHtml(g.reps.slice(0,4).join(' • '))}</div>`;
+    const right = document.createElement('div');
+    right.innerHTML = `<div class="suggestion-count" style="font-weight:700">${g.count}</div>`;
+    row.appendChild(left);
+    row.appendChild(right);
+    suggestionsListEl.appendChild(row);
+  });
+}
+
+/* admin actions */
+exportBtn.addEventListener('click', ()=>{
+  loadSuggestions();
+  const blob = new Blob([JSON.stringify(suggestions,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'ranked_suggestions.json'; document.body.appendChild(a);
+  a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+clearSugBtn.addEventListener('click', ()=>{
+  if(!confirm('Apagar todas as sugestões? (ação irreversível localmente)')) return;
+  suggestions = []; saveSuggestions();
+  populateSuggestionsPanel();
+  showAlert('✅ Sugestões apagadas');
+});
+
+/* init */
+(function init(){
+  loadState();
+  loadSuggestions();
+  // ensure all themes exist in allItems
+  for(const t of Object.keys(THEMES_LIST)){
+    if(!allItems[t]) allItems[t] = THEMES_LIST[t].map(n => ({ name: n, votes: 0 }));
+  }
+  currentTheme = pickThemeOfDay();
+  renderTheme();
+
+  // ensure hero video plays inline & muted on mobile
+  const vid = document.getElementById('heroVideo');
+  if(vid){
+    vid.setAttribute('muted','');
+    vid.setAttribute('playsinline','');
+    vid.play().catch(()=>{/* mobile autoplay may require gesture; ignore */});
+  }
+})();
+</script>
+</body>
+</html>
